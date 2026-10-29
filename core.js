@@ -104,17 +104,46 @@
   const SPACE_NODE = { letter: ' ', x: 790, y: 580 };
   const NODE_MAP = new Map([...NODES, SPACE_NODE].map(node => [node.letter, node]));
 
-  function threadPath(from, to) {
-    if (from.letter !== to.letter) return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+  function threadPath(from, to, occurrence = 0) {
+    if (from.letter !== to.letter) {
+      if (!occurrence) return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+      // A previously used connection needs its own lane, even when traversed
+      // in the opposite direction. Otherwise the return stroke is invisible.
+      const [a,b] = from.letter < to.letter ? [from,to] : [to,from];
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const distance=Math.hypot(dx,dy);
+      let nx=-dy/distance, ny=dx/distance;
+      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      if ((790-mx)*nx+(580-my)*ny < 0) { nx=-nx; ny=-ny; }
+      // Gently fan the curves towards the interior. A bounded, increasing
+      // bend keeps every visit distinct without drawing outside the board.
+      const bend=52+200*occurrence/(occurrence+4);
+      return `M ${from.x} ${from.y} Q ${mx+nx*bend} ${my+ny*bend}, ${to.x} ${to.y}`;
+    }
     // A visible inward loop for consecutive identical letters: book, moon, see.
     const dx = 790 - from.x, dy = 580 - from.y;
     const length = Math.hypot(dx, dy) || 1;
     const ux = length === 1 ? 0 : dx / length;
     const uy = length === 1 ? -1 : dy / length;
     const vx = -uy, vy = ux;
-    const c1 = [from.x + 82 * ux + 60 * vx, from.y + 82 * uy + 60 * vy];
-    const c2 = [from.x + 82 * ux - 60 * vx, from.y + 82 * uy - 60 * vy];
+    const depth = 82+18*occurrence, width = 60+14*occurrence;
+    const c1 = [from.x + depth * ux + width * vx, from.y + depth * uy + width * vy];
+    const c2 = [from.x + depth * ux - width * vx, from.y + depth * uy - width * vy];
     return `M ${from.x} ${from.y} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${from.x} ${from.y}`;
   }
-  return { parseWords, shuffled, Session, NODES, SPACE_NODE, NODE_MAP, threadPath, MAX_LENGTH, MAX_WORDS };
+  function buildThreadSegments(letters) {
+    const visits=new Map();
+    const segments=[];
+    for (let step=1; step<letters.length; step++) {
+      const from=NODE_MAP.get(letters[step-1]);
+      const to=NODE_MAP.get(letters[step]);
+      if (!from || !to) throw new TypeError('Unknown letter in thread history.');
+      const key=[from.letter,to.letter].sort().join('|');
+      const occurrence=visits.get(key) || 0;
+      visits.set(key,occurrence+1);
+      segments.push({step,from,to,occurrence,d:threadPath(from,to,occurrence)});
+    }
+    return segments;
+  }
+  return { parseWords, shuffled, Session, NODES, SPACE_NODE, NODE_MAP, threadPath, buildThreadSegments, MAX_LENGTH, MAX_WORDS };
 }));

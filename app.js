@@ -1,7 +1,7 @@
 /* Word Web — buildless, offline-capable browser application. */
 (() => {
   'use strict';
-  const {parseWords, shuffled, Session, NODES, SPACE_NODE, NODE_MAP, threadPath} = window.WordWebCore;
+  const {parseWords, shuffled, Session, NODES, buildThreadSegments} = window.WordWebCore;
   const $ = id => document.getElementById(id);
   const DEFAULT_WORDS = 'hop\nfly\nrun\njump\nswim\ndive\nbook\na cat';
   const STORAGE_KEY = 'shkoala.word-web.v1';
@@ -198,21 +198,44 @@
   function renderThreads(animateLast = false) {
     const group = $('threads');
     group.replaceChildren();
-    for (let i=1; i<session.letters.length; i++) {
-      const from = NODE_MAP.get(session.letters[i-1]);
-      const to = NODE_MAP.get(session.letters[i]);
-      const d = threadPath(from,to);
+    for (const {step:i,d,occurrence} of buildThreadSegments(session.letters)) {
+      const latest=i===session.letters.length-1;
+      const wrong=i>=session.prefixLength;
       for (const outline of [true,false]) {
         const path = document.createElementNS('http://www.w3.org/2000/svg','path');
         path.setAttribute('d',d);
-        path.setAttribute('class', outline ? 'thread-outline' : `thread-stroke${i>=session.prefixLength?' is-wrong':''}`);
+        path.setAttribute('data-step',String(i));
+        path.setAttribute('data-visit',String(occurrence));
+        path.setAttribute('class', outline ? 'thread-outline' : `thread-stroke${wrong?' is-wrong':''}${latest?' is-latest':''}`);
         group.append(path);
-        if (animateLast && i===session.letters.length-1 && !reducedMotion.matches) {
+        if (animateLast && latest && !reducedMotion.matches) {
           const length = path.getTotalLength();
-          animate(path,[{strokeDasharray:`${length}`,strokeDashoffset:length},{strokeDasharray:`${length}`,strokeDashoffset:0}],{duration:280,easing:'ease-out'});
+          animate(path,[{strokeDasharray:`${length}`,strokeDashoffset:length},{strokeDasharray:`${length}`,strokeDashoffset:0}],{duration:420,easing:'ease-out'});
+          if (!outline) traceThreadTip(path,wrong);
         }
       }
     }
+  }
+  function traceThreadTip(path,wrong) {
+    const marker=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    marker.setAttribute('r','8');
+    marker.setAttribute('fill',wrong ? '#c95148':'#b77926');
+    marker.setAttribute('stroke','#fffbea');
+    marker.setAttribute('stroke-width','3');
+    marker.setAttribute('class','thread-tip');
+    const length=path.getTotalLength();
+    const token=epoch, started=performance.now();
+    $('threads').append(marker);
+    function frame(now) {
+      if (token!==epoch || !marker.isConnected) return;
+      const progress=Math.min(1,(now-started)/420);
+      const point=path.getPointAtLength(length*progress);
+      marker.setAttribute('cx',String(point.x));
+      marker.setAttribute('cy',String(point.y));
+      if (progress<1) requestAnimationFrame(frame);
+      else marker.remove();
+    }
+    frame(started);
   }
   function renderControls() {
     const accepting = phase === 'ready';

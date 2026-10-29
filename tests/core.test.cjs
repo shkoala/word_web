@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 let Core;
 try { Core = require('../dist/core.js'); } catch (_) { Core = require('../core.js'); }
-const {parseWords, Session, shuffled, NODES, NODE_MAP, threadPath} = Core;
+const {parseWords, Session, shuffled, NODES, NODE_MAP, threadPath, buildThreadSegments} = Core;
 
 test('normalises case, CRLF, extra whitespace and short phrases; preserves practice repetitions', () => {
   const input = '  KITE  \r\n\r\nA\tCAT\nbook\nbook\n';
@@ -97,4 +97,40 @@ test('shuffle keeps every entry and does not mutate the teacher list', () => {
   assert.deepEqual(original,['a','cat','book','a']);
   assert.deepEqual(result.slice().sort(),original.slice().sort());
   assert.notDeepEqual(result,original);
+});
+
+test('a cat can run accepts every return to a used letter and separates the repeated centre-to-c connection', () => {
+  const session=new Session(['a cat can run']);
+  for (const letter of 'a cat can run') assert.equal(session.add(letter).correct,true);
+  assert.equal(session.solved,true);
+  assert.equal(session.typed,'a cat can run');
+  const segments=buildThreadSegments(session.letters);
+  assert.equal(segments.length,12);
+  const firstReturn=segments.find(s=>s.step===2);
+  const secondReturn=segments.find(s=>s.step===6);
+  assert.equal(firstReturn.from.letter,' ');
+  assert.equal(firstReturn.to.letter,'c');
+  assert.equal(secondReturn.to.letter,'c');
+  assert.equal(secondReturn.occurrence,1);
+  assert.notEqual(firstReturn.d,secondReturn.d);
+  assert.match(secondReturn.d,/ Q /);
+  assert.notEqual(segments.find(s=>s.step===3).d,segments.find(s=>s.step===7).d);
+});
+test('backtracking across the same pair uses distinct routes in either direction', () => {
+  const segments=buildThreadSegments([...'cacac']);
+  assert.deepEqual(segments.map(s=>s.occurrence),[0,1,2,3]);
+  assert.equal(new Set(segments.map(s=>s.d)).size,4);
+  assert.ok(segments.slice(1).every(s=>s.d.includes(' Q ')));
+  assert.equal(new Set(buildThreadSegments([...'oooo']).map(s=>s.d)).size,3);
+});
+test('undo and reset rebuild lane counts from the remaining clicks only', () => {
+  const session=new Session(['cacac']);
+  for (const letter of 'caca') session.add(letter);
+  const before=buildThreadSegments(session.letters);
+  session.add('c');session.undo();
+  assert.deepEqual(buildThreadSegments(session.letters),before);
+  session.resetWord();
+  assert.deepEqual(buildThreadSegments(session.letters),[]);
+  session.add('c');session.add('a');
+  assert.equal(buildThreadSegments(session.letters)[0].occurrence,0);
 });
