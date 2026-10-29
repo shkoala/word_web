@@ -1,7 +1,7 @@
 /* Word Web — buildless, offline-capable browser application. */
 (() => {
   'use strict';
-  const {parseWords, shuffled, Session, NODES, buildThreadSegments} = window.WordWebCore;
+  const {parseWords, shuffled, Session, NODES, NODE_MAP, buildWebSegments} = window.WordWebCore;
   const $ = id => document.getElementById(id);
   const DEFAULT_WORDS = 'hop\nfly\nrun\njump\nswim\ndive\nbook\na cat';
   const STORAGE_KEY = 'shkoala.word-web.v1';
@@ -12,19 +12,20 @@
       brandCaption:'Поймай слово',eyebrow:'Маленькое приключение с буквами',headline:'Слово — у мухи.\nПаутина — у тебя!',
       intro:'Прочитай слово на мухе и собери его по буквам. С каждым щелчком растёт твоя паутина!',littleNote:'Нажимай на буквы!',
       step1:'Прочитай',step2:'Собери',step3:'Поймай!',teacher:'Для учителя',wordListTitle:'Слова для игры',
-      inputLabel:'Каждое слово или короткая фраза — с новой строки.',inputHint:'Английские буквы и пробелы. До 32 символов в строке.',
+      inputLabel:'Каждое слово или короткая фраза — с новой строки.',inputHint:'A–Z, a–z, пробел, точка, запятая и дефис. Регистр сохраняется. До 32 символов.',
       shuffle:'Перемешать слова',example:'Пример',start:'Готово — играть',setupFootnote:'Свои слова можно поменять в любой момент.',
       wordsButton:'Слова',space:'пробел',undo:'Удалить букву',reset:'Сбросить',next:'Следующее слово',finish:'Завершить',
-      keyboardHint:'Можно и с клавиатуры · A–Z · пробел · ⌫',roundFinished:'Раунд завершён',finishTitle:'Отличная паутина!',
+      keyboardHint:'Клавиатура: A–Z · Shift · пробел · . , - · ⌫',roundFinished:'Раунд завершён',finishTitle:'Отличная паутина!',
       replay:'Сыграть ещё раз',changeWords:'Другие слова',wordCount:'Слов: {n}',round:'Слово {n} / {total}',caught:'Поймано: {n}',
-      entering:'Муха летит! Приготовься читать.',ready:'Собирай слово по буквам. Для пробела нажми в центре.',
+      entering:'Муха летит! Приготовься читать.',ready:'Собирай слово. Пробел, знаки и заглавная буква — в центре.',
       working:'Продолжай — нить за нитью!',mistake:'Муха вырывается! Проверь буквы и удали лишнюю или нажми «Сбросить».',
-      feeding:'Верно! Муха отправляется к паучку.',solved:'Поймано! Можно звать следующую муху.',resetMessage:'Слово и нити сброшены. Попробуй ещё раз!',
+      feeding:'Верно! Муха отправляется к паучку.',solved:'Поймано! Можно звать следующую муху.',resetMessage:'Текущая попытка сброшена. Общая паутина сохранена!',
       finishSummary:'Поймано мух: {n} из {total}',finishAll:'Все слова собраны! Паучок доволен, а твоя паутина готова.',
       finishSome:'Можно сыграть ещё раз и собрать слова, которые пропустили.',letter:'Буква {letter}',spaceAria:'Пробел',
       answerAria:'Твоё слово: {word}',flyTarget:'Слово на мухе: {word}',emptyAnswer:'пока пусто',boardAria:'Паутина с английскими буквами',soundOn:'Выключить звук',soundOff:'Включить звук',
+      periodAria:'Точка',commaAria:'Запятая',hyphenAria:'Дефис',capitalAria:'Заглавная — следующая буква',capitalLabel:'1 буква',capitalOn:'Следующая буква будет заглавной. Затем режим выключится.',
       fullscreen:'На весь экран',exitFullscreen:'Выйти из полного экрана',fullscreenUnavailable:'Полный экран недоступен. Можно играть в этом окне.',
-      errorEmpty:'Добавьте хотя бы одно слово.',errorCharacters:'Строка {line}: допустимы только английские буквы и пробелы.',
+      errorEmpty:'Добавьте хотя бы одно слово.',errorCharacters:'Строка {line}: нужны английские буквы; разрешены пробел, точка, запятая и дефис.',
       errorLength:'Строка {line}: максимум 32 символа, включая пробелы.',errorCount:'Добавьте не больше 200 слов или фраз.',
       loading:'Загружаем картинки…',assetError:'Не удалось загрузить картинки. Распакуйте весь архив и обновите страницу.'
     },
@@ -32,19 +33,20 @@
       brandCaption:'Catch the word',eyebrow:'A little spelling adventure',headline:'The fly has a word.\nYou have a web!',
       intro:'Read the word on the fly and spell it, one letter at a time. Every click adds to your web!',littleNote:'Click the letters!',
       step1:'Read',step2:'Spell',step3:'Catch!',teacher:'For the teacher',wordListTitle:'Your words',
-      inputLabel:'One word or short phrase per line.',inputHint:'English letters and spaces. Up to 32 characters per line.',
+      inputLabel:'One word or short phrase per line.',inputHint:'A–Z, a–z, spaces, periods, commas and hyphens. Case is preserved. Up to 32 characters.',
       shuffle:'Shuffle the words',example:'Example',start:'Ready — play',setupFootnote:'You can change your words at any time.',
       wordsButton:'Words',space:'space',undo:'Undo letter',reset:'Reset',next:'Next word',finish:'Finish',
-      keyboardHint:'Keyboard works too · A–Z · space · ⌫',roundFinished:'Round complete',finishTitle:'What a wonderful web!',
+      keyboardHint:'Keyboard: A–Z · Shift · space · . , - · ⌫',roundFinished:'Round complete',finishTitle:'What a wonderful web!',
       replay:'Play again',changeWords:'New words',wordCount:'Words: {n}',round:'Word {n} / {total}',caught:'Caught: {n}',
-      entering:'Here comes a fly! Get ready to read.',ready:'Spell the word. Click the centre for a space.',
+      entering:'Here comes a fly! Get ready to read.',ready:'Spell the word. Space, punctuation and capital letters are in the centre.',
       working:'Keep going — thread by thread!',mistake:'The fly is wriggling! Check your letters. Undo a letter or press Reset.',
-      feeding:'Correct! The fly is on its way to the spider.',solved:'Caught! Ready for the next fly?',resetMessage:'The word and threads are cleared. Try again!',
+      feeding:'Correct! The fly is on its way to the spider.',solved:'Caught! Ready for the next fly?',resetMessage:'This attempt is cleared. Your shared web is still here!',
       finishSummary:'Flies caught: {n} out of {total}',finishAll:'You spelled every word! The spider is happy and your web is ready.',
       finishSome:'Play again to catch the flies you skipped.',letter:'Letter {letter}',spaceAria:'Space',
       answerAria:'Your word: {word}',flyTarget:'Word on the fly: {word}',emptyAnswer:'empty',boardAria:'Web with English letters',soundOn:'Turn sound off',soundOff:'Turn sound on',
+      periodAria:'Period',commaAria:'Comma',hyphenAria:'Hyphen',capitalAria:'Capital — next letter only',capitalLabel:'1 letter',capitalOn:'Your next letter will be a capital. Then this mode turns off.',
       fullscreen:'Full screen',exitFullscreen:'Exit full screen',fullscreenUnavailable:'Full screen is unavailable. You can play in this window.',
-      errorEmpty:'Add at least one word.',errorCharacters:'Line {line}: use English letters and spaces only.',
+      errorEmpty:'Add at least one word.',errorCharacters:'Line {line}: include English letters; spaces, periods, commas and hyphens are allowed.',
       errorLength:'Line {line}: use up to 32 characters, including spaces.',errorCount:'Please add up to 200 words or phrases.',
       loading:'Loading the pictures…',assetError:'The pictures could not load. Extract the complete archive and refresh the page.'
     }
@@ -67,6 +69,8 @@
   const timers = new Set();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const nodeButtons = new Map();
+  const specialButtons = new Map([[' ', $('spaceButton')],['.', $('periodButton')],[',', $('commaButton')],['-', $('hyphenButton')]]);
+  let drawnTrailSession = null, drawnTrailIndex = -1;
   if (typeof saved.words === 'string' && saved.words.length < 10000) $('wordsInput').value = saved.words;
   $('shuffleInput').checked = saved.shuffle === true;
 
@@ -116,6 +120,8 @@
     $('setupScreen').hidden = name !== 'setup';
     $('gameScreen').hidden = name !== 'game';
     $('finishScreen').hidden = name !== 'finish';
+    $('forestThreads').toggleAttribute('hidden', name !== 'game');
+    document.body.dataset.screen = name;
     $('editWords').hidden = name === 'setup';
   }
   function updateSoundButton() {
@@ -137,6 +143,10 @@
     $('languageButton').setAttribute('aria-label', language === 'ru' ? 'Switch to English' : 'Переключить на русский');
     $('brandHome').setAttribute('aria-label', `Word Web — ${t('wordListTitle')}`);
     $('spaceButton').setAttribute('aria-label', t('spaceAria'));
+    for (const [id, key] of [['periodButton','periodAria'],['commaButton','commaAria'],['hyphenButton','hyphenAria'],['capitalButton','capitalAria']]) {
+      $(id).setAttribute('aria-label',t(key));
+      $(id).title=t(key);
+    }
     $('board').setAttribute('aria-label', t('boardAria'));
     nodeButtons.forEach((button, letter) => { button.setAttribute('aria-label', t('letter', {letter})); });
     updateSoundButton(); updateFullscreenButton(); updateInput();
@@ -171,6 +181,12 @@
     nodeButtons.set(node.letter,button);
     $('letterNodes').append(button);
   });
+  specialButtons.forEach((button, char) => {
+    const node = NODE_MAP.get(char);
+    button.style.left=`${node.x/1491*100}%`;
+    button.style.top=`${node.y/1055*100}%`;
+    button.addEventListener('click', () => choose(char));
+  });
 
   function renderAnswer() {
     const typed = session.typed;
@@ -198,7 +214,21 @@
   function renderThreads(animateLast = false) {
     const group = $('threads');
     group.replaceChildren();
-    for (const {step:i,d,occurrence} of buildThreadSegments(session.letters)) {
+    const segments = buildWebSegments(session.webTrails, session.letters);
+    if (drawnTrailSession !== session || drawnTrailIndex !== session.index) {
+      const fragment=document.createDocumentFragment();
+      for (const {d,wordIndex,occurrence} of segments.filter(segment=>segment.archived)) {
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',d);
+        path.setAttribute('class','thread-archived');
+        path.dataset.word=String(wordIndex);
+        path.dataset.visit=String(occurrence);
+        fragment.append(path);
+      }
+      $('archivedThreads').replaceChildren(fragment);
+      drawnTrailSession=session; drawnTrailIndex=session.index;
+    }
+    for (const {step:i,d,occurrence} of segments.filter(segment=>!segment.archived)) {
       const latest=i===session.letters.length-1;
       const wrong=i>=session.prefixLength;
       for (const outline of [true,false]) {
@@ -239,16 +269,21 @@
   }
   function renderControls() {
     const accepting = phase === 'ready';
-    const last = session.letters[session.letters.length-1];
+    const last = session.letters[session.letters.length-1]?.toLowerCase();
+    const used = session.letters.map(letter=>letter.toLowerCase());
     nodeButtons.forEach((button,letter) => {
       button.disabled = !accepting;
-      button.classList.toggle('is-used',session.letters.includes(letter));
+      button.classList.toggle('is-used',used.includes(letter));
       button.classList.toggle('is-last',letter===last);
       button.classList.toggle('is-wrong',letter===last && !session.correctPrefix);
     });
-    $('spaceButton').disabled = !accepting;
-    $('spaceButton').classList.toggle('is-last',last===' ');
-    $('spaceButton').classList.toggle('is-wrong',last===' ' && !session.correctPrefix);
+    specialButtons.forEach((button,char) => {
+      button.disabled=!accepting;
+      button.classList.toggle('is-last',last===char);
+      button.classList.toggle('is-wrong',last===char && !session.correctPrefix);
+    });
+    $('capitalButton').disabled=!accepting;
+    $('capitalButton').setAttribute('aria-pressed',String(session.capitalNext));
     $('undoButton').disabled = session.letters.length === 0;
     $('nextLabel').textContent = t(session.index === session.words.length-1 ? 'finish' : 'next');
     $('nextButton').classList.toggle('is-celebrating',session.solved);
@@ -270,11 +305,42 @@
   function fitBoard() {
     if (currentScreen!=='game') return;
     const rect = $('stage').getBoundingClientRect();
-    const width = Math.max(0, Math.min(rect.width, (rect.height-4)*1491/1055, 1320));
+    const topReserve = window.innerWidth>1000 ? Math.max(0,$('answerArea').getBoundingClientRect().bottom-rect.top+12) : 0;
+    $('stage').style.paddingTop=`${topReserve}px`;
+    const width = Math.max(0, Math.min(rect.width, (rect.height-topReserve-4)*1491/1055, 1680));
     if (width<1) return;
     $('board').style.width = `${Math.floor(width)}px`;
     $('board').style.setProperty('--board-scale',String(width/1491));
     fitFlyText();
+    renderForestThreads();
+  }
+  function renderForestThreads() {
+    if (currentScreen!=='game') return;
+    const rect=$('board').getBoundingClientRect();
+    const width=window.innerWidth, height=window.innerHeight;
+    const scale=rect.width/1491;
+    const point=letter => { const node=NODE_MAP.get(letter); return {x:rect.left+node.x*scale,y:rect.top+node.y*scale}; };
+    const paths=[];
+    const treeX=side => width*(side==='left'?65/1672:1610/1672);
+    for (const [letter,side,offset] of [['v','left',-90],['w','left',0],['y','left',-55],['x','right',-65],['i','right',0],['q','right',35]]) {
+      const end=point(letter), x=treeX(side);
+      const y=Math.max(80,Math.min(height-70,end.y+offset));
+      paths.push(`M ${x} ${y} Q ${(x+end.x)/2} ${(y+end.y)/2+18*scale}, ${end.x} ${end.y}`);
+    }
+    // Join the existing short strand in the supplied spider art seamlessly.
+    const spiderX=rect.left+153*scale;
+    paths.push(`M ${spiderX} 0 L ${spiderX} ${rect.top+62*scale}`);
+    $('forestThreads').setAttribute('viewBox',`0 0 ${width} ${height}`);
+    const group=$('forestThreadPaths');
+    group.replaceChildren();
+    for (const d of paths) {
+      for (const outline of [true,false]) {
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',d);
+        path.setAttribute('class',outline?'anchor-outline':'anchor-strand');
+        group.append(path);
+      }
+    }
   }
   if (window.ResizeObserver) new ResizeObserver(fitBoard).observe($('stage'));
   window.addEventListener('resize',fitBoard);
@@ -404,7 +470,14 @@
     $('finishMessage').textContent=t(session.caught.size===session.words.length ? 'finishAll':'finishSome');
   }
   function showFinish() {
-    cancelRoundWork(); setScreen('finish'); renderFinish();
+    cancelRoundWork();
+    const fragment=document.createDocumentFragment();
+    for (const {d} of buildWebSegments(session.webTrails)) {
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',d); path.setAttribute('class','thread-archived'); fragment.append(path);
+    }
+    $('finishWebThreads').replaceChildren(fragment);
+    setScreen('finish'); renderFinish();
     $('finishTitle').tabIndex=-1; $('finishTitle').focus({preventScroll:true});
   }
 
@@ -412,7 +485,11 @@
   $('wordsInput').addEventListener('input',updateInput);
   $('demoButton').addEventListener('click',() => { $('wordsInput').value=DEFAULT_WORDS; updateInput(); $('wordsInput').focus(); });
   $('shuffleInput').addEventListener('change',saveSettings);
-  $('spaceButton').addEventListener('click',() => choose(' '));
+  $('capitalButton').addEventListener('click',() => {
+    if (currentScreen!=='game' || phase!=='ready' || !session) return;
+    session.toggleCapital(); renderControls();
+    setStatus(session.capitalNext ? 'capitalOn' : !session.correctPrefix ? 'mistake' : session.letters.length ? 'working' : 'ready');
+  });
   $('undoButton').addEventListener('click',undo);
   $('resetButton').addEventListener('click',resetWord);
   $('nextButton').addEventListener('click',nextWord);
@@ -434,15 +511,14 @@
     if (currentScreen!=='game' || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
     if (event.target.closest('input,textarea,select,[contenteditable=true]')) return;
     const letterKey=/^[a-zA-Z]$/.test(event.key);
-    if (!letterKey && event.key!==' ' && event.key!=='Backspace') return;
+    if (!letterKey && ![' ','.',',','-','Backspace'].includes(event.key)) return;
     event.preventDefault();
     if (event.repeat) return;
-    if (letterKey) choose(event.key.toLowerCase());
-    else if (event.key===' ') choose(' ');
-    else undo();
+    if (event.key==='Backspace') undo();
+    else choose(event.key);
   });
 
-  updateTranslation();
+  setScreen('setup'); updateTranslation();
   Promise.all(ASSETS.map(src => new Promise((resolve,reject) => {
     const image=new Image(); image.onload=resolve; image.onerror=reject; image.src=src;
   }))).then(() => { assetsReady=true; updateInput(); },() => { assetFailed=true; updateInput(); });

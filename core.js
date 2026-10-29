@@ -8,14 +8,15 @@
   'use strict';
   const MAX_LENGTH = 32;
   const MAX_WORDS = 200;
+  const validEntry = text => typeof text === 'string' && /[a-z]/i.test(text) && /^[a-zA-Z .,\-]+$/.test(text);
 
   function parseWords(source) {
     const words = [];
     const errors = [];
     String(source ?? '').replace(/\r\n?/g, '\n').split('\n').forEach((line, index) => {
-      const text = line.trim().replace(/\s+/g, ' ').toLowerCase();
+      const text = line.trim().replace(/\s+/g, ' ');
       if (!text) return;
-      if (!/^[a-z]+(?: [a-z]+)*$/.test(text)) {
+      if (!validEntry(text)) {
         errors.push({ line: index + 1, code: 'characters' });
       } else if (text.length > MAX_LENGTH) {
         errors.push({ line: index + 1, code: 'length' });
@@ -38,13 +39,15 @@
   class Session {
     constructor(words) {
       if (!Array.isArray(words) || !words.length || words.length > MAX_WORDS ||
-          words.some(word => typeof word !== 'string' || !/^[a-z]+(?: [a-z]+)*$/.test(word) || word.length > MAX_LENGTH)) {
+          words.some(word => !validEntry(word) || word.length > MAX_LENGTH)) {
         throw new TypeError('Session requires a validated nonempty word list.');
       }
       this.words = words.slice();
       this.index = 0;
       this.letters = [];
       this.caught = new Set();
+      this.webTrails = [];
+      this.capitalNext = false;
     }
     get word() { return this.words[this.index] ?? null; }
     get typed() { return this.letters.join(''); }
@@ -57,8 +60,12 @@
       return length;
     }
     add(letter) {
-      if (this.finished || this.solved || !/^[a-z ]$/.test(letter) || this.letters.length >= MAX_LENGTH + 1) {
+      if (this.finished || this.solved || typeof letter !== 'string' || !/^[a-zA-Z .,\-]$/.test(letter) || this.letters.length >= MAX_LENGTH + 1) {
         return { accepted: false, correct: false, solved: this.solved };
+      }
+      if (/[a-z]/i.test(letter)) {
+        if (this.capitalNext) letter = letter.toUpperCase();
+        this.capitalNext = false;
       }
       this.letters.push(letter);
       if (this.solved) this.caught.add(this.index);
@@ -68,17 +75,28 @@
       if (!this.letters.length || this.finished) return false;
       this.caught.delete(this.index);
       this.letters.pop();
+      this.capitalNext = false;
       return true;
     }
     resetWord() {
       if (this.finished) return;
       this.caught.delete(this.index);
       this.letters = [];
+      this.capitalNext = false;
+    }
+    toggleCapital() {
+      if (this.finished || this.solved) return false;
+      this.capitalNext = !this.capitalNext;
+      return this.capitalNext;
     }
     next() {
       if (!this.finished) {
+        // Keep only the correct part. A skipped mistake must not leave red
+        // strands in the shared web, and words never join across boundaries.
+        this.webTrails.push(this.letters.slice(0, this.prefixLength));
         this.index++;
         this.letters = [];
+        this.capitalNext = false;
       }
       return !this.finished;
     }
@@ -101,8 +119,11 @@
     ['g',232,288,160,235,270,326], ['v',334,212,298,146,372,253],
     ['r',458,140,419,69,496,177], ['z',601,101,558,27,644,140]
   ].map(([letter,x,y,left,top,right,bottom]) => ({ letter,x,y,left,top,right,bottom }));
-  const SPACE_NODE = { letter: ' ', x: 790, y: 580 };
-  const NODE_MAP = new Map([...NODES, SPACE_NODE].map(node => [node.letter, node]));
+  const SPACE_NODE = { letter: ' ', x: 790, y: 650 };
+  const PUNCTUATION_NODES = [
+    {letter:'.', x:650, y:650}, {letter:',', x:930, y:650}, {letter:'-', x:1070, y:650}
+  ];
+  const NODE_MAP = new Map([...NODES, SPACE_NODE, ...PUNCTUATION_NODES].map(node => [node.letter, node]));
 
   function threadPath(from, to, occurrence = 0) {
     if (from.letter !== to.letter) {
@@ -131,12 +152,11 @@
     const c2 = [from.x + depth * ux - width * vx, from.y + depth * uy - width * vy];
     return `M ${from.x} ${from.y} C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${from.x} ${from.y}`;
   }
-  function buildThreadSegments(letters) {
-    const visits=new Map();
+  function buildThreadSegments(letters, visits = new Map()) {
     const segments=[];
     for (let step=1; step<letters.length; step++) {
-      const from=NODE_MAP.get(letters[step-1]);
-      const to=NODE_MAP.get(letters[step]);
+      const from=NODE_MAP.get(letters[step-1].toLowerCase());
+      const to=NODE_MAP.get(letters[step].toLowerCase());
       if (!from || !to) throw new TypeError('Unknown letter in thread history.');
       const key=[from.letter,to.letter].sort().join('|');
       const occurrence=visits.get(key) || 0;
@@ -145,5 +165,14 @@
     }
     return segments;
   }
-  return { parseWords, shuffled, Session, NODES, SPACE_NODE, NODE_MAP, threadPath, buildThreadSegments, MAX_LENGTH, MAX_WORDS };
+  function buildWebSegments(trails, letters = []) {
+    const visits = new Map();
+    const result = [];
+    trails.forEach((trail, wordIndex) => {
+      for (const segment of buildThreadSegments(trail, visits)) result.push({...segment, wordIndex, archived:true});
+    });
+    for (const segment of buildThreadSegments(letters, visits)) result.push({...segment, wordIndex:trails.length, archived:false});
+    return result;
+  }
+  return { parseWords, shuffled, Session, NODES, SPACE_NODE, PUNCTUATION_NODES, NODE_MAP, threadPath, buildThreadSegments, buildWebSegments, MAX_LENGTH, MAX_WORDS };
 }));

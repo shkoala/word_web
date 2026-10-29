@@ -9,11 +9,12 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='.9em' font-size='54'%3E🕸️%3C/text%3E%3C/svg%3E">
   <link rel="preload" href="assets/forest.png" as="image">
   <link rel="preload" href="assets/web.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=20261029-2">
-  <script src="core.js?v=20261029-2" defer></script>
-  <script src="app.js?v=20261029-2" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261029-3">
+  <script src="core.js?v=20261029-3" defer></script>
+  <script src="app.js?v=20261029-3" defer></script>
 </head>
 <body>
+  <svg id="forestThreads" class="forest-threads" aria-hidden="true" hidden><g id="forestThreadPaths"></g></svg>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
     <symbol id="icon-web" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19L19 5M8 4c0 5-4 4-4 4m12-4c0 5 4 4 4 4M4 16c5 0 4 4 4 4m8 0c0-5 4-4 4-4M12 6l6 6-6 6-6-6z"/></symbol>
     <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
@@ -62,7 +63,7 @@ swim
 dive
 book
 a cat</textarea>
-        <p class="input-hint" id="inputHint" data-i18n="inputHint">Английские буквы и пробелы. До 32 символов в строке.</p>
+        <p class="input-hint" id="inputHint" data-i18n="inputHint">A–Z, a–z, пробел, точка, запятая и дефис. Регистр сохраняется. До 32 символов.</p>
         <p id="inputError" class="input-error" role="status" aria-live="polite"></p>
         <div class="setup-options"><label class="checkbox"><input id="shuffleInput" type="checkbox"><span data-i18n="shuffle">Перемешать слова</span></label><button id="demoButton" type="button" class="text-button" data-i18n="example">Пример</button></div>
         <button id="startButton" class="btn btn-primary start-button" type="submit"><span data-i18n="start">Готово — играть</span><svg class="icon"><use href="#icon-arrow"/></svg></button>
@@ -71,7 +72,7 @@ a cat</textarea>
     </section>
 
     <section id="gameScreen" class="game-screen" hidden aria-label="Word Web">
-      <div class="answer-area">
+      <div id="answerArea" class="answer-area">
         <div class="round-meta"><span id="roundCounter"></span><span class="catch-count"><svg class="icon"><use href="#icon-web"/></svg><span id="caughtCounter"></span></span></div>
         <div id="answerSlots" class="answer-slots" aria-label="Твоё слово" role="group"></div>
         <p id="gameStatus" class="game-status" aria-live="polite" role="status"></p>
@@ -79,10 +80,16 @@ a cat</textarea>
       <div class="stage" id="stage">
         <div id="board" class="board" role="group" aria-label="Паутина с английскими буквами">
           <img class="web-art" src="assets/web.png" alt="" draggable="false">
-          <svg id="threadSvg" class="thread-svg" viewBox="0 0 1491 1055" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g id="threads"></g></svg>
+          <svg id="threadSvg" class="thread-svg" viewBox="0 0 1491 1055" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g id="archivedThreads"></g><g id="threads"></g></svg>
           <div id="spiderActor" class="spider-actor" aria-hidden="true"><img src="assets/web.png" alt="" draggable="false"></div>
           <div id="letterNodes" class="letter-nodes"></div>
-          <button id="spaceButton" class="space-node" type="button" aria-label="Пробел"><span class="space-symbol" aria-hidden="true">␣</span><span class="space-label" data-i18n="space">пробел</span></button>
+          <div class="centre-controls">
+            <button id="capitalButton" class="centre-node capital-node" type="button" aria-label="Заглавная — следующая буква" aria-pressed="false"><span class="capital-symbol" aria-hidden="true">⇧ A</span><span class="centre-label" data-i18n="capitalLabel">1 буква</span></button>
+            <button id="periodButton" class="centre-node punctuation-node" type="button" aria-label="Точка"><span aria-hidden="true">.</span></button>
+            <button id="spaceButton" class="centre-node space-node" type="button" aria-label="Пробел"><span class="space-symbol" aria-hidden="true">␣</span><span class="centre-label" data-i18n="space">пробел</span></button>
+            <button id="commaButton" class="centre-node punctuation-node" type="button" aria-label="Запятая"><span aria-hidden="true">,</span></button>
+            <button id="hyphenButton" class="centre-node punctuation-node" type="button" aria-label="Дефис"><span aria-hidden="true">-</span></button>
+          </div>
           <div id="flyPosition" class="fly-position" role="img"><div id="flyMotion" class="fly-motion"><div id="flySprite" class="fly-sprite"><img id="flyImage" src="assets/fly-brown.png" alt="" draggable="false"><span id="flyWord" class="fly-word"></span></div></div></div>
           <span id="spiderBubble" class="spider-bubble" hidden aria-hidden="true">Yum!</span>
           <span id="winSparkle" class="win-sparkle" hidden aria-hidden="true">✦ ✧ ✦</span>
@@ -96,7 +103,7 @@ a cat</textarea>
     </section>
 
     <section id="finishScreen" class="finish-screen" hidden aria-labelledby="finishTitle">
-      <div class="finish-card"><div class="finish-symbol" aria-hidden="true"><svg class="icon"><use href="#icon-web"/></svg><span>✦</span></div><p class="eyebrow" data-i18n="roundFinished">Раунд завершён</p><h1 id="finishTitle" data-i18n="finishTitle">Отличная паутина!</h1><p id="finishSummary" class="finish-summary"></p><p id="finishMessage" class="finish-message"></p><div class="finish-actions"><button id="replayButton" class="btn btn-primary"><svg class="icon"><use href="#icon-reset"/></svg><span data-i18n="replay">Сыграть ещё раз</span></button><button id="changeWordsButton" class="btn btn-soft"><svg class="icon"><use href="#icon-edit"/></svg><span data-i18n="changeWords">Другие слова</span></button></div></div>
+      <div class="finish-card"><svg class="finish-web" viewBox="0 0 1491 1055" aria-hidden="true"><image href="assets/web.png" width="1491" height="1055"/><g id="finishWebThreads"></g></svg><p class="eyebrow" data-i18n="roundFinished">Раунд завершён</p><h1 id="finishTitle" data-i18n="finishTitle">Отличная паутина!</h1><p id="finishSummary" class="finish-summary"></p><p id="finishMessage" class="finish-message"></p><div class="finish-actions"><button id="replayButton" class="btn btn-primary"><svg class="icon"><use href="#icon-reset"/></svg><span data-i18n="replay">Сыграть ещё раз</span></button><button id="changeWordsButton" class="btn btn-soft"><svg class="icon"><use href="#icon-edit"/></svg><span data-i18n="changeWords">Другие слова</span></button></div></div>
     </section>
   </main>
   <noscript><p class="noscript">Для игры включите JavaScript в браузере. / Please enable JavaScript to play.</p></noscript>

@@ -3,13 +3,13 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 let Core;
 try { Core = require('../dist/core.js'); } catch (_) { Core = require('../core.js'); }
-const {parseWords, Session, shuffled, NODES, NODE_MAP, threadPath, buildThreadSegments} = Core;
+const {parseWords, Session, shuffled, NODES, NODE_MAP, threadPath, buildThreadSegments, buildWebSegments} = Core;
 
-test('normalises case, CRLF, extra whitespace and short phrases; preserves practice repetitions', () => {
+test('preserves case and practice repetitions while normalising whitespace', () => {
   const input = '  KITE  \r\n\r\nA\tCAT\nbook\nbook\n';
-  assert.deepEqual(parseWords(input), {words:['kite','a cat','book','book'],errors:[],valid:true});
+  assert.deepEqual(parseWords(input), {words:['KITE','A CAT','book','book'],errors:[],valid:true});
 });
-test('rejects punctuation, non-English letters, overlong phrases, empty lists and excess entries', () => {
+test('rejects unsupported punctuation, non-English letters, overlong phrases, empty lists and excess entries', () => {
   assert.equal(parseWords('cat\nкот').errors[0].line,2);
   assert.equal(parseWords("don't").errors[0].code,'characters');
   assert.equal(parseWords('<img src=x>').valid,false);
@@ -17,7 +17,7 @@ test('rejects punctuation, non-English letters, overlong phrases, empty lists an
   assert.equal(parseWords('a'.repeat(32)).valid,true);
   assert.equal(parseWords(' \n\n').errors[0].code,'empty');
   assert.equal(parseWords(Array(201).fill('cat').join('\n')).errors[0].code,'count');
-  assert.throws(() => new Session(['Cat']),TypeError);
+  assert.equal(new Session(['Cat']).word,'Cat');
   assert.throws(() => new Session([]),TypeError);
 });
 test('wrong clicks stay visible, never win, and can be undone before correct completion', () => {
@@ -133,4 +133,70 @@ test('undo and reset rebuild lane counts from the remaining clicks only', () => 
   assert.deepEqual(buildThreadSegments(session.letters),[]);
   session.add('c');session.add('a');
   assert.equal(buildThreadSegments(session.letters)[0].occurrence,0);
+});
+
+test('correct threads accumulate across six words without connecting word boundaries', () => {
+  const session=new Session(['cat','cat','cat','cat','cat','cat']);
+  for (let round=0;round<6;round++) {
+    for (const char of 'cat') session.add(char);
+    session.next();
+    assert.equal(buildWebSegments(session.webTrails).length,(round+1)*2);
+  }
+  const segments=buildWebSegments(session.webTrails);
+  assert.equal(session.caught.size,6);
+  assert.deepEqual(segments.filter(s=>s.from.letter==='c').map(s=>s.occurrence),[0,1,2,3,4,5]);
+  assert.equal(new Set(segments.map(s=>s.d)).size,12);
+  assert.ok(segments.every(s=>s.archived));
+});
+test('reset and undo affect only the current attempt; replay starts a new empty web', () => {
+  const session=new Session(['cat','car']);
+  for(const char of 'cat') session.add(char);
+  session.next();
+  const saved=buildWebSegments(session.webTrails);
+  for(const char of 'ca') session.add(char);
+  session.undo(); session.resetWord();
+  assert.deepEqual(buildWebSegments(session.webTrails),saved);
+  assert.equal(session.caught.size,1);
+  assert.equal(new Session(session.words).webTrails.length,0);
+});
+test('skipping keeps only the correct prefix, never a wrong red segment', () => {
+  const session=new Session(['catch','cat']);
+  for(const char of 'catx') session.add(char);
+  session.next();
+  assert.deepEqual(session.webTrails,[['c','a','t']]);
+  assert.equal(buildWebSegments(session.webTrails).length,2);
+  assert.equal(session.caught.size,0);
+});
+test('punctuation and case are preserved, required and represented by real central nodes', () => {
+  const target='Cat, dog-bone.';
+  assert.deepEqual(parseWords(target).words,[target]);
+  assert.equal(parseWords('...').valid,false);
+  const session=new Session([target]);
+  session.add('c'); assert.equal(session.correctPrefix,false); session.undo();
+  for(const char of target) session.add(char);
+  assert.equal(session.solved,true);
+  const segments=buildThreadSegments(session.letters);
+  assert.equal(segments.length,target.length-1);
+  assert.equal(segments[0].from.letter,'c');
+  for(const char of ['.',',','-',' ']) assert.ok(NODE_MAP.has(char));
+});
+test('capital control applies to one next letter, is cancellable, and adds no character or thread', () => {
+  const session=new Session(['A Cat.','Dog']);
+  session.toggleCapital(); session.toggleCapital();
+  assert.equal(session.capitalNext,false);
+  session.toggleCapital(); session.add('a');
+  assert.equal(session.typed,'A'); assert.equal(session.capitalNext,false);
+  session.add(' '); session.toggleCapital();
+  assert.equal(session.typed,'A ');
+  session.add('c'); session.add('a'); session.add('t'); session.add('.');
+  assert.equal(session.typed,'A Cat.'); assert.equal(session.solved,true);
+  session.next(); assert.equal(session.capitalNext,false);
+  session.toggleCapital(); session.resetWord(); assert.equal(session.capitalNext,false);
+});
+test('arming capital survives punctuation until a letter, while invalid input does not consume it', () => {
+  const session=new Session(['a']);
+  session.toggleCapital();
+  assert.equal(session.add('!').accepted,false);
+  session.add('.'); assert.equal(session.capitalNext,true);
+  session.add('a'); assert.equal(session.typed,'.A'); assert.equal(session.capitalNext,false);
 });
