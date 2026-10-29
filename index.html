@@ -9,13 +9,17 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='.9em' font-size='54'%3E🕸️%3C/text%3E%3C/svg%3E">
   <link rel="preload" href="assets/forest.png" as="image">
   <link rel="preload" href="assets/web-v3.svg" as="image">
-  <link rel="stylesheet" href="styles.css?v=20261029-4">
+  <link rel="stylesheet" href="styles.css?v=20261029-5">
   <script src="core.js?v=20261029-4" defer></script>
   <script src="app.js?v=20261029-4" defer></script>
 </head>
 <body>
   <svg id="forestThreads" class="forest-threads" aria-hidden="true" hidden><g id="forestThreadPaths"></g></svg>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <filter id="logo-cutout" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -1 -1 -1 0 3" result="logo-ink"/>
+      <feComposite in="logo-ink" in2="SourceGraphic" operator="in"/>
+    </filter>
     <symbol id="icon-web" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19L19 5M8 4c0 5-4 4-4 4m12-4c0 5 4 4 4 4M4 16c5 0 4 4 4 4m8 0c0-5 4-4 4-4M12 6l6 6-6 6-6-6z"/></symbol>
     <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
     <symbol id="icon-undo" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/></symbol>
@@ -28,9 +32,13 @@
   </defs></svg>
   <header class="topbar">
     <a class="brand" href="#" id="brandHome" aria-label="Word Web — your words">
-      <img class="brand-logo" src="assets/shkoala-logo.png" alt="SHKOALA — Use it. Love it. Live it." width="154" height="53">
+      <span class="brand-icon" aria-hidden="true"><svg class="icon"><use href="#icon-web"/></svg></span>
       <span class="brand-title">Word <strong>Web</strong><small data-i18n="brandCaption">Catch the word</small></span>
     </a>
+    <div class="setup-branding" aria-label="SHKOALA">
+      <img class="setup-logo" style="filter:url(#logo-cutout)" src="assets/shkoala-logo.png" alt="SHKOALA — Use it. Love it. Live it." width="1182" height="403" draggable="false">
+      <a class="more-games-link" href="https://vk.ru/abc_shkoala?w=donut_payment-190039625&amp;levelId=3559" target="_blank" rel="noopener noreferrer">More games <svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></a>
+    </div>
     <div class="top-actions">
       <button class="btn btn-quiet edit-words" id="editWords" hidden><svg class="icon"><use href="#icon-edit"/></svg><span data-i18n="wordsButton">Words</span></button>
       <button class="btn btn-icon sound-toggle" id="soundButton" aria-pressed="false" data-title="soundOff"><svg class="icon"><use href="#icon-sound"/></svg></button>

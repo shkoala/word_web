@@ -55,7 +55,7 @@ body[data-screen=game]{background-size:100% 100%}
 }
 /* Large lettering and refreshed, separate artwork. */
 .brand{gap:12px}
-.brand-logo{width:154px;height:auto;display:block;background:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 2px 8px #6451270d}
+
 .brand-title{white-space:nowrap}
 .web-art{clip-path:none}
 .spider-actor{top:2.36967%;height:auto;overflow:visible;transform-origin:50% 20%}
@@ -70,11 +70,29 @@ body[data-screen=game]{background-size:100% 100%}
 .apostrophe-node span{transform:translateY(5%)}
 .finish-web{width:320px;max-width:82%}
 @media(max-width:700px){
-  .brand-logo{width:120px;padding:3px 5px;border-radius:8px}
+  
   .brand-title{display:none}
   .game-screen .answer-slot{height:46px;min-width:34px;font-size:34px;padding:0 4px}
   .game-screen .answer-slots{min-height:46px}
   .game-screen .answer-slots.is-long .answer-slot{height:36px;min-width:25px;font-size:27px;padding:0 3px}
   .game-screen .game-status{font-size:11px}
+}
+
+/* The large, transparent SHKOALA mark and club link belong to setup only. */
+.setup-branding{display:none}
+body[data-screen=setup]{--header-height:136px}
+body[data-screen=setup] .topbar{align-items:flex-start;padding-top:16px}
+body[data-screen=setup] .setup-screen{padding-top:12px;padding-bottom:24px}
+body[data-screen=setup] .setup-branding{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:min(1200px,calc(100% - 48px));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px) minmax(0,1fr);gap:24px;align-items:center;pointer-events:none}
+.setup-logo{grid-column:2;width:100%;height:auto;display:block;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;pointer-events:none}
+.more-games-link{grid-column:3;justify-self:start;display:inline-flex;align-items:center;gap:8px;padding:10px 0;color:var(--green-dark);font-size:18px;font-weight:800;white-space:nowrap;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:6px;pointer-events:auto}
+.more-games-link:hover{color:#214c31}
+.more-games-link .icon{width:20px;height:20px}
+.brand-title{display:block}
+@media(max-width:900px){
+  body[data-screen=setup]{--header-height:224px}
+  body[data-screen=setup] .setup-branding{top:54px;width:calc(100% - 32px);display:flex;flex-direction:column;gap:6px}
+  .setup-logo{width:min(340px,100%)}
+  .more-games-link{font-size:16px;padding:6px 0;line-height:1.5}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
