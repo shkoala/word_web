@@ -11,7 +11,7 @@ test('preserves case and practice repetitions while normalising whitespace', () 
 });
 test('rejects unsupported punctuation, non-English letters, overlong phrases, empty lists and excess entries', () => {
   assert.equal(parseWords('cat\nкот').errors[0].line,2);
-  assert.equal(parseWords("don't").errors[0].code,'characters');
+  assert.equal(parseWords("don't!").errors[0].code,'characters');
   assert.equal(parseWords('<img src=x>').valid,false);
   assert.equal(parseWords('a'.repeat(33)).errors[0].code,'length');
   assert.equal(parseWords('a'.repeat(32)).valid,true);
@@ -74,7 +74,7 @@ test('Next skips an unfinished word, clears its trail and handles the final word
   assert.equal(session.index,2);
   assert.equal(session.caught.size,1);
 });
-test('all 26 hotspots are unique, match the supplied image and include their dot', () => {
+test('all 26 hotspots are unique, stay inside the new artwork and include their dot', () => {
   assert.equal(NODES.length,26);
   assert.equal(NODES.map(node=>node.letter).sort().join(''),'abcdefghijklmnopqrstuvwxyz');
   for (const node of NODES) {
@@ -85,7 +85,8 @@ test('all 26 hotspots are unique, match the supplied image and include their dot
   assert.equal(NODE_MAP.get(' ').letter,' ');
 });
 test('thread coordinates follow clicked dots and repeated letters make a visible loop', () => {
-  assert.equal(threadPath(NODE_MAP.get('a'),NODE_MAP.get('b')),'M 1267 263 L 1034 138');
+  const a=NODE_MAP.get('a'), b=NODE_MAP.get('b');
+  assert.equal(threadPath(a,b),`M ${a.x} ${a.y} L ${b.x} ${b.y}`);
   const loop = threadPath(NODE_MAP.get('o'),NODE_MAP.get('o'));
   assert.match(loop,/ C /);
   assert.ok(!loop.includes('NaN'));
@@ -199,4 +200,43 @@ test('arming capital survives punctuation until a letter, while invalid input do
   assert.equal(session.add('!').accepted,false);
   session.add('.'); assert.equal(session.capitalNext,true);
   session.add('a'); assert.equal(session.typed,'.A'); assert.equal(session.capitalNext,false);
+});
+
+test('common and less common letters alternate all the way around the circle', () => {
+  const common=new Set('etanosi ruhdlc'.replace(/ /g,''));
+  assert.equal(common.size,13);
+  for(let i=0;i<NODES.length;i++) assert.notEqual(common.has(NODES[i].letter),common.has(NODES[(i+1)%26].letter));
+  const vowels=NODES.map((n,i)=>'aeiou'.includes(n.letter)?i:-1).filter(i=>i>=0);
+  assert.equal(vowels.length,5);
+  assert.ok(vowels.some(i=>i>=13));
+  for(let i=0;i<vowels.length;i++) assert.ok(((vowels[(i+1)%5]-vowels[i]+26)%26)<=6);
+});
+test('the new visible alphabet matches every click and thread node exactly', () => {
+  const fs=require('node:fs');
+  const siteRoot=fs.existsSync(path.join(__dirname,'../dist/core.js')) ? path.join(__dirname,'../dist') : path.join(__dirname,'..');
+  const svg=fs.readFileSync(path.join(siteRoot,'assets/web-v3.svg'),'utf8');
+  assert.equal((svg.match(/data-letter=/g)||[]).length,26);
+  for(const node of NODES) {
+    assert.ok(svg.includes(`data-letter="${node.letter}"><circle cx="${node.x}" cy="${node.y}"`));
+    assert.ok(svg.includes(`<text x="${node.labelX}" y="${node.labelY}"`));
+  }
+});
+test('apostrophes work in words and sentences, including pasted curly apostrophes', () => {
+  const parsed=parseWords('I’m a cat.\ndon‘t\nColeʼs');
+  assert.deepEqual(parsed.words,["I'm a cat.","don't","Cole's"]);
+  assert.equal(parsed.valid,true);
+  const session=new Session(parsed.words);
+  for(const char of 'I’m a cat.') session.add(char);
+  assert.equal(session.solved,true);
+  assert.equal(session.typed,"I'm a cat.");
+  const segments=buildThreadSegments(session.letters);
+  assert.equal(segments[0].to,NODE_MAP.get("'"));
+  assert.equal(segments[1].from,NODE_MAP.get("'"));
+  session.next();
+  assert.equal(buildWebSegments(session.webTrails).length,9);
+});
+test('punctuation controls occupy separate, scattered locations inside the web', () => {
+  const nodes=[' ','.',',','-',"'"].map(char=>NODE_MAP.get(char));
+  assert.equal(new Set(nodes.map(n=>n.y)).size,5);
+  for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++) assert.ok(Math.hypot(nodes[i].x-nodes[j].x,nodes[i].y-nodes[j].y)>140);
 });

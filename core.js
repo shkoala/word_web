@@ -8,13 +8,14 @@
   'use strict';
   const MAX_LENGTH = 32;
   const MAX_WORDS = 200;
-  const validEntry = text => typeof text === 'string' && /[a-z]/i.test(text) && /^[a-zA-Z .,\-]+$/.test(text);
+  const normaliseApostrophes = text => text.replace(/[\u2018\u2019\u02bc]/g, "'");
+  const validEntry = text => typeof text === 'string' && /[a-z]/i.test(text) && /^[a-zA-Z .,'\-]+$/.test(text);
 
   function parseWords(source) {
     const words = [];
     const errors = [];
     String(source ?? '').replace(/\r\n?/g, '\n').split('\n').forEach((line, index) => {
-      const text = line.trim().replace(/\s+/g, ' ');
+      const text = normaliseApostrophes(line.trim().replace(/\s+/g, ' '));
       if (!text) return;
       if (!validEntry(text)) {
         errors.push({ line: index + 1, code: 'characters' });
@@ -60,7 +61,8 @@
       return length;
     }
     add(letter) {
-      if (this.finished || this.solved || typeof letter !== 'string' || !/^[a-zA-Z .,\-]$/.test(letter) || this.letters.length >= MAX_LENGTH + 1) {
+      if (typeof letter === 'string') letter=normaliseApostrophes(letter);
+      if (this.finished || this.solved || typeof letter !== 'string' || !/^[a-zA-Z .,'\-]$/.test(letter) || this.letters.length >= MAX_LENGTH + 1) {
         return { accepted: false, correct: false, solved: this.solved };
       }
       if (/[a-z]/i.test(letter)) {
@@ -102,26 +104,26 @@
     }
   }
 
-  // Coordinates are measured against the supplied 1491 × 1055 PNG.
-  // x/y are the brown dot centres; hit includes both the printed letter and dot.
-  const NODES = [
-    ['t',748,80,715,5,786,108], ['d',893,100,864,15,932,130],
-    ['b',1034,138,1000,58,1081,168], ['l',1158,202,1131,123,1204,234],
-    ['a',1267,263,1231,190,1308,300], ['x',1350,354,1311,285,1420,391],
-    ['o',1389,457,1354,405,1475,495], ['i',1410,561,1376,511,1467,603],
-    ['u',1382,672,1344,632,1464,719], ['q',1330,771,1291,731,1405,833],
-    ['f',1242,855,1207,815,1303,920], ['k',1121,909,1084,870,1190,981],
-    ['p',993,949,951,910,1050,1042], ['s',850,974,812,933,905,1048],
-    ['e',707,974,655,934,752,1050], ['j',439,914,394,877,474,1007],
-    ['h',325,862,260,821,361,937], ['y',233,789,164,754,275,859],
-    ['m',174,695,87,656,213,743], ['n',132,593,58,542,176,638],
-    ['w',129,489,43,443,173,535], ['c',161,382,95,338,203,424],
-    ['g',232,288,160,235,270,326], ['v',334,212,298,146,372,253],
-    ['r',458,140,419,69,496,177], ['z',601,101,558,27,644,140]
-  ].map(([letter,x,y,left,top,right,bottom]) => ({ letter,x,y,left,top,right,bottom }));
+  // Alternating common and less common letters; vowels span the whole web.
+  // Artwork and hit areas share these exact coordinates (1491 × 1055).
+  const LETTER_ORDER = 'ez tq nj ax sk iv rb cy ow dg up lf hm'.replace(/ /g,'');
+  const NODES = [...LETTER_ORDER].map((letter,index) => {
+    const angle=-Math.PI/2+index*Math.PI*2/26;
+    const x=+(770+590*Math.cos(angle)).toFixed(2);
+    const y=+(535+390*Math.sin(angle)).toFixed(2);
+    const labelX=+(x+68*Math.cos(angle)).toFixed(2);
+    const labelY=+(y+70*Math.sin(angle)).toFixed(2);
+    const halfWidth='mw'.includes(letter)?62:'il'.includes(letter)?32:49;
+    return {letter,x,y,labelX,labelY,
+      left:Math.max(0,Math.min(x-24,labelX-halfWidth)),
+      right:Math.min(1491,Math.max(x+24,labelX+halfWidth)),
+      top:Math.max(0,Math.min(y-24,labelY-57)),
+      bottom:Math.min(1055,Math.max(y+24,labelY+57))};
+  });
   const SPACE_NODE = { letter: ' ', x: 790, y: 650 };
   const PUNCTUATION_NODES = [
-    {letter:'.', x:650, y:650}, {letter:',', x:930, y:650}, {letter:'-', x:1070, y:650}
+    {letter:'.', x:430, y:410}, {letter:',', x:1090, y:760},
+    {letter:'-', x:510, y:745}, {letter:"'", x:1180, y:470}
   ];
   const NODE_MAP = new Map([...NODES, SPACE_NODE, ...PUNCTUATION_NODES].map(node => [node.letter, node]));
 
@@ -174,5 +176,5 @@
     for (const segment of buildThreadSegments(letters, visits)) result.push({...segment, wordIndex:trails.length, archived:false});
     return result;
   }
-  return { parseWords, shuffled, Session, NODES, SPACE_NODE, PUNCTUATION_NODES, NODE_MAP, threadPath, buildThreadSegments, buildWebSegments, MAX_LENGTH, MAX_WORDS };
+  return { parseWords, shuffled, Session, LETTER_ORDER, NODES, SPACE_NODE, PUNCTUATION_NODES, NODE_MAP, threadPath, buildThreadSegments, buildWebSegments, MAX_LENGTH, MAX_WORDS };
 }));

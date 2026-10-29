@@ -53,4 +53,28 @@ body[data-screen=game]{background-size:100% 100%}
   body{background-size:100% 100%}
   .centre-node{border-width:1px}
 }
+/* Large lettering and refreshed, separate artwork. */
+.brand{gap:12px}
+.brand-logo{width:154px;height:auto;display:block;background:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 2px 8px #6451270d}
+.brand-title{white-space:nowrap}
+.web-art{clip-path:none}
+.spider-actor{top:2.36967%;height:auto;overflow:visible;transform-origin:50% 20%}
+.spider-actor img{width:100%;max-width:100%;height:auto}
+.capital-node{left:46.94836%;top:77.72512%}
+.fly-word{left:35%;width:49%;top:40%;height:28%;line-height:1.03;padding:2px 5px;border-radius:14px}
+.game-screen .answer-slot{height:60px;min-width:46px;font-size:46px;padding:0 6px}
+.game-screen .answer-slots{min-height:60px}
+.game-screen .answer-slot.is-space{min-width:32px;font-size:30px}
+.game-screen .answer-slots.is-long .answer-slot{height:48px;min-width:34px;font-size:36px;padding:0 4px}
+.game-screen .game-status{font-size:13px}
+.apostrophe-node span{transform:translateY(5%)}
+.finish-web{width:320px;max-width:82%}
+@media(max-width:700px){
+  .brand-logo{width:120px;padding:3px 5px;border-radius:8px}
+  .brand-title{display:none}
+  .game-screen .answer-slot{height:46px;min-width:34px;font-size:34px;padding:0 4px}
+  .game-screen .answer-slots{min-height:46px}
+  .game-screen .answer-slots.is-long .answer-slot{height:36px;min-width:25px;font-size:27px;padding:0 3px}
+  .game-screen .game-status{font-size:11px}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
