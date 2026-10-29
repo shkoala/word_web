@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#fbf3df">
+  <meta name="description" content="Word Web — a playful spelling game. Catch a fly by spelling its word on the alphabet web. Add your own words and short phrases.">
+  <title>Word Web · Поймай слово</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='.9em' font-size='54'%3E🕸️%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="assets/forest.png" as="image">
+  <link rel="preload" href="assets/web.png" as="image">
+  <link rel="stylesheet" href="styles.css">
+  <script src="core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="icon-web" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19L19 5M8 4c0 5-4 4-4 4m12-4c0 5 4 4 4 4M4 16c5 0 4 4 4 4m8 0c0-5 4-4 4-4M12 6l6 6-6 6-6-6z"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="icon-undo" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/></symbol>
+    <symbol id="icon-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1-.2 6M4 3v6h6"/></symbol>
+    <symbol id="icon-expand" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></symbol>
+    <symbol id="icon-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24"><path d="m15 4 5 5-11 11-6 1 1-6zM13 6l5 5"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24"><path d="M20 12H5m6-6-6 6 6 6"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L20 5"/></symbol>
+  </defs></svg>
+  <header class="topbar">
+    <a class="brand" href="#" id="brandHome" aria-label="Word Web — слова для игры">
+      <span class="brand-icon"><svg class="icon"><use href="#icon-web"/></svg></span>
+      <span>Word <strong>Web</strong><small data-i18n="brandCaption">Поймай слово</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="btn btn-quiet edit-words" id="editWords" hidden><svg class="icon"><use href="#icon-edit"/></svg><span data-i18n="wordsButton">Слова</span></button>
+      <button class="btn btn-icon sound-toggle" id="soundButton" aria-pressed="false" data-title="soundOff"><svg class="icon"><use href="#icon-sound"/></svg></button>
+      <button class="btn btn-icon" id="fullscreenButton" aria-pressed="false" data-title="fullscreen"><svg class="icon"><use href="#icon-expand"/></svg></button>
+      <button class="btn btn-language" id="languageButton" aria-label="Switch to English">EN</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="setupScreen" class="setup-screen" aria-labelledby="setupTitle">
+      <div class="intro">
+        <p class="eyebrow"><span class="tiny-star">✦</span> <span data-i18n="eyebrow">Маленькое приключение с буквами</span></p>
+        <h1 id="setupTitle" data-i18n="headline">Слово — у мухи.<br>Паутина — у тебя!</h1>
+        <p class="intro-copy" data-i18n="intro">Прочитай слово на мухе и собери его по буквам. С каждым щелчком растёт твоя паутина!</p>
+        <div class="intro-illustration" aria-hidden="true">
+          <svg class="intro-thread" viewBox="0 0 460 210"><path d="M5 30 Q165 210 420 55M50 180 Q200 10 450 160"/></svg>
+          <div class="demo-fly"><img src="assets/fly-brown.png" alt="" draggable="false"><span class="demo-word">hop</span></div>
+          <span class="little-note" data-i18n="littleNote">Нажимай на буквы!</span>
+        </div>
+        <div class="how-to"><span><b>1</b><span data-i18n="step1">Прочитай</span></span><span><b>2</b><span data-i18n="step2">Собери</span></span><span><b>3</b><span data-i18n="step3">Поймай!</span></span></div>
+      </div>
+      <form id="setupForm" class="setup-card" novalidate>
+        <div class="card-heading"><div><span class="section-kicker" data-i18n="teacher">Для учителя</span><h2 data-i18n="wordListTitle">Слова для игры</h2></div><span class="word-count" id="wordCount">8</span></div>
+        <label for="wordsInput" class="input-caption" data-i18n="inputLabel">Каждое слово или короткая фраза — с новой строки.</label>
+        <textarea id="wordsInput" rows="7" spellcheck="false" autocapitalize="none" autocomplete="off" autocorrect="off" aria-describedby="inputHint inputError">hop
+fly
+run
+jump
+swim
+dive
+book
+a cat</textarea>
+        <p class="input-hint" id="inputHint" data-i18n="inputHint">Английские буквы и пробелы. До 32 символов в строке.</p>
+        <p id="inputError" class="input-error" role="status" aria-live="polite"></p>
+        <div class="setup-options"><label class="checkbox"><input id="shuffleInput" type="checkbox"><span data-i18n="shuffle">Перемешать слова</span></label><button id="demoButton" type="button" class="text-button" data-i18n="example">Пример</button></div>
+        <button id="startButton" class="btn btn-primary start-button" type="submit"><span data-i18n="start">Готово — играть</span><svg class="icon"><use href="#icon-arrow"/></svg></button>
+        <p class="setup-footnote" data-i18n="setupFootnote">Свои слова можно поменять в любой момент.</p>
+      </form>
+    </section>
+
+    <section id="gameScreen" class="game-screen" hidden aria-label="Word Web">
+      <div class="answer-area">
+        <div class="round-meta"><span id="roundCounter"></span><span class="catch-count"><svg class="icon"><use href="#icon-web"/></svg><span id="caughtCounter"></span></span></div>
+        <div id="answerSlots" class="answer-slots" aria-label="Твоё слово" role="group"></div>
+        <p id="gameStatus" class="game-status" aria-live="polite" role="status"></p>
+      </div>
+      <div class="stage" id="stage">
+        <div id="board" class="board" role="group" aria-label="Паутина с английскими буквами">
+          <img class="web-art" src="assets/web.png" alt="" draggable="false">
+          <svg id="threadSvg" class="thread-svg" viewBox="0 0 1491 1055" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g id="threads"></g></svg>
+          <div id="spiderActor" class="spider-actor" aria-hidden="true"><img src="assets/web.png" alt="" draggable="false"></div>
+          <div id="letterNodes" class="letter-nodes"></div>
+          <button id="spaceButton" class="space-node" type="button" aria-label="Пробел"><span class="space-symbol" aria-hidden="true">␣</span><span class="space-label" data-i18n="space">пробел</span></button>
+          <div id="flyPosition" class="fly-position" role="img"><div id="flyMotion" class="fly-motion"><div id="flySprite" class="fly-sprite"><img id="flyImage" src="assets/fly-brown.png" alt="" draggable="false"><span id="flyWord" class="fly-word"></span></div></div></div>
+          <span id="spiderBubble" class="spider-bubble" hidden aria-hidden="true">Yum!</span>
+          <span id="winSparkle" class="win-sparkle" hidden aria-hidden="true">✦ ✧ ✦</span>
+        </div>
+      </div>
+      <footer class="game-controls">
+        <div class="correction-buttons"><button id="undoButton" class="btn btn-soft" type="button"><svg class="icon"><use href="#icon-undo"/></svg><span data-i18n="undo">Удалить букву</span></button><button id="resetButton" class="btn btn-soft" type="button"><svg class="icon"><use href="#icon-reset"/></svg><span data-i18n="reset">Сбросить</span></button></div>
+        <span class="keyboard-hint" data-i18n="keyboardHint">Можно и с клавиатуры · A–Z · пробел · ⌫</span>
+        <button id="nextButton" class="btn btn-primary next-button" type="button"><span id="nextLabel" data-i18n="next">Следующее слово</span><svg class="icon"><use href="#icon-arrow"/></svg></button>
+      </footer>
+    </section>
+
+    <section id="finishScreen" class="finish-screen" hidden aria-labelledby="finishTitle">
+      <div class="finish-card"><div class="finish-symbol" aria-hidden="true"><svg class="icon"><use href="#icon-web"/></svg><span>✦</span></div><p class="eyebrow" data-i18n="roundFinished">Раунд завершён</p><h1 id="finishTitle" data-i18n="finishTitle">Отличная паутина!</h1><p id="finishSummary" class="finish-summary"></p><p id="finishMessage" class="finish-message"></p><div class="finish-actions"><button id="replayButton" class="btn btn-primary"><svg class="icon"><use href="#icon-reset"/></svg><span data-i18n="replay">Сыграть ещё раз</span></button><button id="changeWordsButton" class="btn btn-soft"><svg class="icon"><use href="#icon-edit"/></svg><span data-i18n="changeWords">Другие слова</span></button></div></div>
+    </section>
+  </main>
+  <noscript><p class="noscript">Для игры включите JavaScript в браузере. / Please enable JavaScript to play.</p></noscript>
+</body>
+</html>

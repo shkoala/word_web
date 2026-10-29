@@ -1,0 +1,7 @@
+{
+  "name": "shkoala-word-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Word Web — classroom spelling game, ready for GitHub Pages",
+  "scripts": {"test": "node --test tests/core.test.cjs"}
+}
